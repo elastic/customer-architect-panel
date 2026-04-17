@@ -10,7 +10,7 @@
 |------|-------------|
 | [presentations/goes-cloud-transformation-template.pptx](presentations/goes-cloud-transformation-template.pptx) | Elastic-branded 4-slide PowerPoint template for Part 1 |
 | [diagrams/goes-current-state-architecture.svg](diagrams/goes-current-state-architecture.svg) | GOES current-state on-premises architecture diagram |
-| [sample-data/apache_access.log](sample-data/apache_access.log) | Apache access log file used in Exercise 1 (Logstash ingestion) |
+| [sample-data/apache_access.log.gz](sample-data/apache_access.log.gz) | Apache access log file used in Exercise 1 — 2M lines, Apr 1–17 2026 (gzip compressed, 39 MB → 427 MB uncompressed) |
 | [logstash/pipeline.conf](logstash/pipeline.conf) | Logstash pipeline configuration template for Exercise 1 |
 
 ## Quick Start
@@ -144,7 +144,7 @@ Use the Elastic platform to ingest and analyze a sample dataset — demonstratin
 
 #### Collect Logs via Logstash
 
-- Use the provided **[Apache access log file](sample-data/apache_access.log)** in this repo
+- Use the provided **[Apache access log file](sample-data/apache_access.log.gz)** in this repo (gunzip before use: `gunzip -k sample-data/apache_access.log.gz`)
 - Reference the [Logstash Quick Start Guide](https://www.elastic.co/guide/en/logstash/current/getting-started-with-logstash.html)
 - Use **Logstash file input** and **Elasticsearch output** — see [pipeline.conf](logstash/pipeline.conf) for a starting template
 - Apply a prebuilt Logstash grok pattern or define your own
