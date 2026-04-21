@@ -2,7 +2,7 @@
 
 > **Duration:** 45 minutes
 >
-> **Back to:** [Interview Briefing](README.md)
+> **Back to:** [Interview Briefing](../../README.md)
 
 ---
 
@@ -97,4 +97,4 @@ Be prepared to discuss:
 
 ---
 
-*← [Back to Interview Briefing](README.md)*
+*← [Back to Interview Briefing](../../README.md)*

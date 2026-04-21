@@ -2,7 +2,7 @@
 
 > **Duration:** 45 minutes
 >
-> **Back to:** [Interview Briefing](README.md)
+> **Back to:** [Interview Briefing](../../README.md)
 
 ---
 
@@ -95,4 +95,4 @@ Use the Elastic Security platform to demonstrate host visibility, threat investi
 
 ---
 
-*← [Back to Interview Briefing](README.md)*
+*← [Back to Interview Briefing](../../README.md)*

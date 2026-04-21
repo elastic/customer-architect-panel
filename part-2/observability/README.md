@@ -2,7 +2,7 @@
 
 > **Duration:** 45 minutes
 >
-> **Back to:** [Interview Briefing](README.md)
+> **Back to:** [Interview Briefing](../../README.md)
 
 ---
 
@@ -120,8 +120,8 @@ Load Generator (Locust) → OTel Demo Services (~20)
 
 2. **Copy the Elastic configuration files** from this repo:
    ```bash
-   cp /path/to/customer-architect-panel/otel/collector-config.yml ./collector-config.yml
-   cp /path/to/customer-architect-panel/otel/docker-compose.override.yml ./docker-compose.override.yml
+   cp /path/to/customer-architect-panel/part-2/observability/otel/collector-config.yml ./collector-config.yml
+   cp /path/to/customer-architect-panel/part-2/observability/otel/docker-compose.override.yml ./docker-compose.override.yml
    ```
 
 3. **Edit `collector-config.yml`** — replace the two `REPLACE_WITH_YOUR_*` placeholders:
@@ -190,4 +190,4 @@ Load Generator (Locust) → OTel Demo Services (~20)
 
 ---
 
-*← [Back to Interview Briefing](README.md)*
+*← [Back to Interview Briefing](../../README.md)*

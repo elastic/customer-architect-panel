@@ -2,7 +2,7 @@
 
 > **Duration:** 45 minutes
 >
-> **Back to:** [Interview Briefing](README.md)
+> **Back to:** [Interview Briefing](../../README.md)
 
 ---
 
@@ -212,4 +212,4 @@ Walk the panel through a **live demo** of your running application. Cover:
 
 ---
 
-*← [Back to Interview Briefing](README.md)*
+*← [Back to Interview Briefing](../../README.md)*
