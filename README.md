@@ -54,13 +54,12 @@ part-1/
 
 part-2/
 ├── observability/
-│   ├── README.md                      # Host metrics, Apache log ingest, OTel Demo Shop
-│   ├── sample-data/
-│   │   └── apache_access.log.gz       # 2M-line Apache log, Apr 1–17 2026
-│   ├── logstash/
-│   │   └── pipeline.conf              # Logstash pipeline template
+│   ├── README.md                      # Serverless Observability Complete + OTel Demo on K8s
+│   ├── sample-data/                   # Legacy Apache sample (optional / not required)
+│   ├── logstash/                      # Legacy Logstash lab (optional / not required)
 │   └── otel/
-│       ├── collector-config.yml       # OTel Collector → Elastic Cloud config
+│       ├── my-values-file.yaml        # Helm values: OTel Demo → Elastic OTLP
+│       ├── collector-config.yml       # Docker Compose fallback collector config
 │       └── docker-compose.override.yml
 ├── search/
 │   ├── README.md                      # ELSER semantic search, RAG, Agent Builder
@@ -76,12 +75,12 @@ part-2/
 
 ## Elastic Cloud Setup
 
-1. Go to [cloud.elastic.co](https://cloud.elastic.co/) and start a free 14-day trial
-2. Create a new deployment — the defaults are fine
-3. **Save immediately:** `elastic` user password and your **Cloud ID** (shown once on creation)
-4. Your Cloud ID is visible later under **Deployment → Manage → Cloud ID**
+1. Go to [cloud.elastic.co](https://cloud.elastic.co/) and start a free trial
+2. For the **Observability** track, create an **Observability Serverless** project on the **Complete** tier (see [part-2/observability/](part-2/observability/))
+3. For other tracks, use the project / deployment type noted in that track’s README
+4. **Save credentials immediately** (project URL, API keys, and any Cloud ID / password shown at creation)
 
-> **Security track only:** You need a **Security-type Serverless project** (or a deployment with Elastic Security enabled) — this is separate from the standard deployment used in other exercises.
+> **Security track only:** You need a **Security-type Serverless project** (or a deployment with Elastic Security enabled) — this is separate from the Observability Serverless project used in the Observability exercise.
 
 ---
 
@@ -92,8 +91,8 @@ part-2/
 - **Choose ONE exercise** for Part 2 — you will not have time for more than one in the 35-minute window
 - **Within your exercise**, sections marked *Intermediate* and *Advanced* represent two levels of depth — your interviewer will indicate which is expected, or you may choose based on your background
 - **Documentation may be imperfect** — working through ambiguity is part of what the panel is evaluating
-- **Prepare in advance:** OTel Demo image pulls (~3 GB), ELSER model deployment (5–10 min), and LLM API key setup should all be done the day before your interview
-- **Elastic Cloud trials expire after 14 days** — ensure your deployment is active the morning of your interview
+- **Prepare in advance:** OTel Demo image / Helm chart pulls, local Kubernetes readiness, ELSER model deployment (5–10 min), and LLM API key setup should all be done the day before your interview
+- **Elastic Cloud trials expire** — ensure your project / deployment is active the morning of your interview
 
 ---
 

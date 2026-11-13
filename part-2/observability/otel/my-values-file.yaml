@@ -1,0 +1,37 @@
+# OpenTelemetry Demo → Elastic Observability Serverless (Complete)
+#
+# Usage:
+#   1. Replace the two REPLACE_WITH_YOUR_* placeholders below
+#   2. helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+#   3. helm install my-otel-demo open-telemetry/opentelemetry-demo \
+#        --values my-values-file.yaml --namespace otel-demo --create-namespace
+#
+# Notes:
+#   - Helm merges objects but REPLACES arrays. Keep spanmetrics in the traces exporters list.
+#   - Prefer Elastic Cloud Managed OTLP Endpoint for Serverless when available.
+#   - API key: Kibana → project → create API key with ingest privileges for the Observability project.
+#
+# Docs:
+#   https://opentelemetry.io/docs/demo/kubernetes-deployment/
+#   https://www.elastic.co/docs/reference/edot-collector/upstream-collector
+
+opentelemetry-collector:
+  config:
+    exporters:
+      # Elastic Cloud Managed OTLP / APM OTLP endpoint
+      # Example Serverless: https://<id>.apm.<region>.elastic.cloud:443
+      # Example Managed OTLP: use the endpoint shown in Add data → OpenTelemetry
+      otlphttp/elastic:
+        endpoint: "https://REPLACE_WITH_YOUR_OTLP_ENDPOINT"
+        headers:
+          Authorization: "ApiKey REPLACE_WITH_YOUR_API_KEY"
+
+    service:
+      pipelines:
+        traces:
+          # spanmetrics MUST remain when overriding this array
+          exporters: [spanmetrics, otlphttp/elastic]
+        metrics:
+          exporters: [otlphttp/elastic]
+        logs:
+          exporters: [otlphttp/elastic]

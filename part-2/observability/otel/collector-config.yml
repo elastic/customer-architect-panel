@@ -1,8 +1,12 @@
 # otel/collector-config.yml
 #
+# Docker Compose fallback (preferred path is Helm on local Kubernetes —
+# see my-values-file.yaml and the Observability README).
+#
 # Drop this file into the root of your opentelemetry-demo/ directory alongside
 # docker-compose.override.yml. It replaces the demo's default collector config
-# and routes all telemetry (traces, metrics, logs) to your Elastic Cloud deployment.
+# and routes all telemetry (traces, metrics, logs) to Elastic Cloud /
+# Observability Serverless via OTLP.
 #
 # Only edit the lines marked TODO below — everything else is ready to go.
 # ─────────────────────────────────────────────────────────────────────────────

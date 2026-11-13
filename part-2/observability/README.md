@@ -1,4 +1,4 @@
-# Part 2 — Exercise 1: Observability Stack Setup
+# Part 2 — Exercise 1: Observability (Elastic Serverless + OpenTelemetry)
 
 > **Duration:** 45 minutes
 >
@@ -8,185 +8,209 @@
 
 ## Objective
 
-Use the Elastic Observability platform to ingest and analyse data from multiple sources — demonstrating hands-on capability and depth of curiosity about Elastic's products.
+Stand up **Elastic Observability Serverless (Complete)**, send **OTLP** metrics, traces, and logs from the **OpenTelemetry Demo** running on **local Kubernetes**, then walk the panel through the **Serverless Observability project UI** — every major left-nav experience — and explain what a customer would get from each.
+
+This exercise is intentionally **OpenTelemetry-first**. Elastic is a major contributor to the OTel ecosystem; candidates should demonstrate comfort with OTLP and curated Observability experiences, not legacy one-off log shipping.
 
 ### What the Panel is Looking For
 
-- Walk through your **process and findings**
-- Explain your choices and the challenges you encountered
-- Discuss what your **visualizations and dashboards** reveal about the dataset
-- Demonstrate the ability to gather data, search/filter it, and visualize results
+- A clear path from **signup → project → telemetry → insight**
+- Comfort with **OTLP** (logs, metrics, and traces) into Elastic
+- Ability to **navigate Observability Complete** and explain customer value per area
+- Process, tradeoffs, and findings — not just “I clicked until something lit up”
 
 ---
 
-## Step 1 — Collect Host Metrics (Elastic Agent)
+## Architecture
 
-- Follow Elastic Agent instructions to collect metrics from your local machine
-- **Disable log collection** for the system integration
-- Navigate to **Observability → Infrastructure → Hosts** (may need to be enabled)
-
-**Create 2 Alerts/Rules:**
-
-| # | Condition | Notification |
-|---|-----------|-------------|
-| 1 | Average `system.cpu.system.pct` > 50% for last 1 min | Email alert |
-| 2 | Average `system.memory.used.pct` > 85% for last 1 min | Email alert |
-
-> **Bonus:** Customize the alert subject and body to include the metric name and current value
+```
+Local Kubernetes (kind / minikube / Docker Desktop K8s)
+        │
+        │  OpenTelemetry Demo (Astronomy Shop) via Helm
+        │  ~20 instrumented microservices + load generator
+        ▼
+OpenTelemetry Collector (in-cluster)
+        │  OTLP (traces · metrics · logs)
+        ▼
+Elastic Cloud — Observability Serverless project (Complete)
+        │
+        ▼
+Kibana Observability UI (Services, Logs, Infrastructure, SLOs, Alerts, …)
+```
 
 ---
 
-## Step 2 — Ingest and Analyse Apache Logs (Logstash)
+## Step 1 — Create an Elastic Observability Serverless project
 
-- Decompress the log file: `gunzip -k sample-data/apache_access.log.gz`
-- Reference the [Logstash Quick Start Guide](https://www.elastic.co/guide/en/logstash/current/getting-started-with-logstash.html)
-- Use **Logstash file input** and **Elasticsearch output** — see [logstash/pipeline.conf](logstash/pipeline.conf) for a starting template
-- Apply a prebuilt Logstash grok pattern or define your own
-- Create **Kibana visualizations** on points of interest from the Apache log
-- Assemble visualizations into a **Kibana dashboard**
+1. Sign up / log in at [cloud.elastic.co](https://cloud.elastic.co/)
+2. Create a new **Observability** project on **Elastic Cloud Serverless**
+3. Choose the **Complete** feature tier (full-stack experiences: logs, metrics, traces, SLOs, curated UIs, AI assists where available)
+4. Open the project in Kibana and keep it handy — you will walk the **left navigation** in Step 4
 
-### Analyse Logs with ES|QL
+### Get your OTLP endpoint and API key
 
-Once your Apache data is indexed into `apache-access-logs-*`, use ES|QL to build a dashboard that tells a story about what the data reveals — **don't just visualise the data, demonstrate its value to a customer.**
+In the project, open **Add data → OpenTelemetry** (or **Observability → Add data → APM / OpenTelemetry** depending on UI version) and note:
 
-**In Kibana → Dashboards → Create dashboard → Add panel → ES|QL**
+| Value | Where it goes |
+|---|---|
+| **Managed OTLP / APM OTLP endpoint** | `my-values-file.yaml` → exporter `endpoint` |
+| **API key** | `Authorization: ApiKey <key>` header |
 
-Think about what a business stakeholder would care about when looking at web traffic logs:
-- Where are users spending time, and where are they bouncing?
-- When does demand spike, and is the platform keeping up?
-- What does error behaviour reveal about reliability or potential threats?
-- Which parts of the product — shopping, streaming, payments — are driving the most load?
-
-Build a dashboard of at least 3 panels that answers questions like these. The panels below are **examples of the kind of analysis ES|QL enables** — use them as a starting point or inspiration, but the goal is a coherent narrative, not a checklist:
-
-```esql
--- Request volume over time — is traffic behaving as expected?
-FROM apache-access-logs-*
-| EVAL hour = DATE_TRUNC(1 hour, @timestamp)
-| STATS requests = COUNT(*) BY hour
-| SORT hour ASC
-```
-
-```esql
--- Error rate by endpoint — where is the platform failing users?
-FROM apache-access-logs-*
-| WHERE response >= 400
-| STATS errors = COUNT(*) BY request
-| SORT errors DESC
-| LIMIT 10
-```
-
-```esql
--- Bandwidth by content type — what is driving egress cost?
-FROM apache-access-logs-*
-| STATS total_bytes = SUM(bytes) BY verb
-| SORT total_bytes DESC
-```
-
-> **Note on field names:** The `COMBINEDAPACHELOG` grok pattern produces `clientip`, `verb`, `request`, `response` (integer), and `bytes` (integer). Use these names in your ES|QL queries — they differ from ECS dot-notation.
-
-Be prepared to walk the panel through your dashboard and explain: *what would you tell a customer's VP of Engineering or Head of E-Commerce based on what you see here?*
-
-> **Bonus:** Create a single-metric **anomaly detection job** to detect unusually high or low request rates (create a data view over `apache-access-logs-*` first if needed)
+> **Tip:** Prefer the **Managed OTLP Endpoint** path when the UI offers it for Serverless — native OTLP in, Elastic handles scaling and signal processing.
 
 ---
 
-## Step 3 — Observe with OpenTelemetry (OTel Demo Shop)
+## Step 2 — Local Kubernetes + OpenTelemetry Demo (Helm)
 
-The monitored application is the **[OpenTelemetry Demo (Astronomy Shop)](https://github.com/open-telemetry/opentelemetry-demo)** — a realistic microservices e-commerce application with ~20 services written in Go, Java, Python, .NET, Node.js, Ruby, PHP, and Rust. It ships with full OpenTelemetry instrumentation and a built-in load generator, so traces, metrics, and logs flow continuously without any manual interaction.
+### Prerequisites
 
-**Data flow:**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) **or** another local Kubernetes (kind / minikube / k3d)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [Helm 3](https://helm.sh/docs/intro/install/)
+- At least **8 GB RAM** available to the cluster (OTel Demo is not tiny)
+
+Enable Kubernetes in Docker Desktop (**Settings → Kubernetes → Enable**) *or* create a kind cluster:
+
+```bash
+kind create cluster --name otel-demo
 ```
-Load Generator (Locust) → OTel Demo Services (~20)
-                                    ↓
-                        OpenTelemetry Collector
-                                    ↓
-                  Elastic Cloud  (APM · Metrics · Logs)
+
+### Install the OpenTelemetry Demo
+
+```bash
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+helm repo update open-telemetry
 ```
 
-**Prerequisites:**
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Docker Compose v2)
-- At least **6 GB RAM** allocated to Docker — check Settings → Resources before starting
-- Your Elastic Cloud deployment running with APM endpoint and API key ready
+Copy the values cheat sheet from this repo and edit the two placeholders:
 
-**Steps:**
+```bash
+cp /path/to/customer-architect-panel/part-2/observability/otel/my-values-file.yaml ./my-values-file.yaml
+# Edit REPLACE_WITH_YOUR_OTLP_ENDPOINT and REPLACE_WITH_YOUR_API_KEY
+```
 
-1. **Clone the demo** and check out a stable release:
-   ```bash
-   git clone https://github.com/open-telemetry/opentelemetry-demo.git
-   cd opentelemetry-demo
-   git checkout v1.12.0
-   ```
+Install:
 
-2. **Copy the Elastic configuration files** from this repo:
-   ```bash
-   cp /path/to/customer-architect-panel/part-2/observability/otel/collector-config.yml ./collector-config.yml
-   cp /path/to/customer-architect-panel/part-2/observability/otel/docker-compose.override.yml ./docker-compose.override.yml
-   ```
+```bash
+helm install my-otel-demo open-telemetry/opentelemetry-demo \
+  --values my-values-file.yaml \
+  --namespace otel-demo \
+  --create-namespace
+```
 
-3. **Edit `collector-config.yml`** — replace the two `REPLACE_WITH_YOUR_*` placeholders:
-   - `endpoint` — find yours in Kibana under **Observability → Add data → APM → OpenTelemetry**
-   - `Authorization` — create an API key in Kibana under **Stack Management → API Keys**, then encode it:
-     ```bash
-     echo -n "<id>:<secret>" | base64
-     ```
+Watch pods come up:
 
-4. **Start the stack** (first run pulls ~3 GB of images — do this before your interview):
-   ```bash
-   docker compose up --detach
-   ```
+```bash
+kubectl get pods -n otel-demo -w
+```
 
-5. **Verify telemetry is arriving** in Kibana:
-   - **Observability → APM → Services** — ~15 services should appear (cartservice, checkoutservice, frontend, etc.)
-   - **Observability → APM → Service Map** — live dependency graph across all services
-   - **Dashboards** — search for *OpenTelemetry Demo* for a prebuilt overview
+### Verify the storefront (optional)
 
-6. **Explore the running stack:**
-   - Storefront UI: `http://localhost:8080`
-   - Locust load generator: `http://localhost:8089`
+```bash
+kubectl port-forward -n otel-demo svc/my-otel-demo-frontend-proxy 8080:8080
+```
 
-7. **Stop when done:** `docker compose down`
+Open `http://localhost:8080` — generate a little traffic while the load generator runs.
 
-> **Troubleshooting:** If services appear in APM but metrics are missing, check collector logs:
-> `docker compose logs otelcol --tail 50` — a `401 Unauthorized` means your API key or endpoint needs correcting.
+### Uninstall when done
+
+```bash
+helm uninstall my-otel-demo -n otel-demo
+# kind delete cluster --name otel-demo   # if you used kind
+```
+
+> **Troubleshooting**
+> - Collector `401` / auth errors → API key or endpoint wrong in `my-values-file.yaml`
+> - No services in Elastic after 5–10 minutes → `kubectl logs -n otel-demo deploy/my-otel-demo-otelcol --tail=80`
+> - Cluster OOMs → raise Docker Desktop memory or disable optional demo components in values
 >
-> **Override not working?** Copy the config directly as a fallback:
-> `cp collector-config.yml src/otelcollector/otelcol-config.yml` then run `docker compose up` without the override file.
+> **Arrays replace on Helm merge:** if you override the Collector `traces` exporters, keep `spanmetrics` in that list (required by the chart). Our sample values file already does this.
 
-### Explore OTel Metrics
+---
 
-1. Navigate to **Observability → APM → Services** → select `frontend` or `checkoutservice` → open the **Metrics** tab. Note which services expose runtime metrics (JVM heap, Go runtime) vs only request metrics.
+## Step 3 — Confirm telemetry in Elastic
 
-2. Navigate to **Dashboards** → search *OpenTelemetry* → open the prebuilt dashboard. Identify the services with the highest request rate and highest p99 latency.
+Within a few minutes you should see:
 
-3. In **Kibana Lens**, build a custom panel:
-   - Metric: `span.duration.us` at the 99th percentile
-   - Breakdown by `service.name`
-   - Time range: last 15 minutes
+| Check | Where |
+|---|---|
+| Services appear | **Observability → APM / Services** (frontend, checkout, cart, …) |
+| Traces / dependencies | Service map / trace waterfall |
+| Logs correlated | Logs experiences filtered by `service.name` / `trace.id` |
+| Metrics flowing | Service metrics + infrastructure / host-adjacent views as available |
 
-**Be prepared to explain the difference between infrastructure metrics and application/service metrics, and how both surface in Elastic Observability.**
+Be ready to explain the difference between **infrastructure** signals and **application** signals (services, transactions, spans) and how OTLP carries all three signal types.
 
-> **Intermediate track — stop here.** Proceed to the Final Question.
+---
 
-### Advanced: Correlate Logs and APM Traces
+## Step 4 — Showcase the Serverless Observability project (left nav)
 
-1. In **APM → Services**, find a service with a non-zero error rate (the load generator creates synthetic errors). Click into a failed transaction and open the **Logs** tab on the trace detail page.
+**This is the core of the exercise.** Open your Observability Complete project and walk the panel through **each major left-nav area**. For every section, say out loud:
 
-2. Observe how Elastic links the APM trace to log lines via the shared `trace.id` field. From the trace detail, click through to **Discover** — Elastic pre-filters on `trace.id` to show only logs from that single request.
+1. **What it is**  
+2. **What customer problem it solves**  
+3. **What you see from the OTel Demo right now**
 
-3. Navigate to **Observability → Logs → Explorer**, filter by `service.name: checkoutservice`, and use **Surrounding documents** around an error log line to reconstruct the sequence of events.
+Use this checklist (names may vary slightly by UI version — cover the intent of each):
 
-4. **Discuss:** How does correlating logs and traces across signal types reduce MTTR compared to siloed monitoring tools?
+| Left-nav area | What to show / discuss |
+|---|---|
+| **Overview / Home** | Fleet health of the estate at a glance — what a VP Eng would open first |
+| **Services / APM** | Service inventory, latency, errors, throughput from Astronomy Shop |
+| **Traces / Service map** | Dependencies; pick a slow or failing transaction and walk the waterfall |
+| **Logs** | Service logs; jump from a trace → related logs via `trace.id` |
+| **Infrastructure / Hosts / K8s** | Cluster / container / host context next to app signals |
+| **SLOs** | Define or discuss an SLO on a critical service (e.g. frontend availability / latency) |
+| **Alerts / Cases** | One meaningful alert (error rate or latency); how it would page a human |
+| **Dashboards** | OTel / curated dashboards — narrative, not wallpaper |
+| **AI Assistant** (if available on Complete) | Ask a grounded question about a failing service / spike |
+| **Add data / Integrations** | How a customer expands beyond this demo (more K8s, cloud, synthetics) |
 
-> **Bonus — Universal Profiling:** If your Elastic Cloud deployment includes Universal Profiling (available on some trial tiers), navigate to **Observability → Universal Profiling → Flamegraph** and observe CPU flame graphs — no additional agent configuration needed. Profiling shows *why* a service is slow; traces show *where*; metrics show *when*.
+> **Rubric:** Candidates who only open Services and stop will under-index. Candidates who connect **signal → investigation → customer outcome** across the nav will stand out.
 
-> **Bonus — Workflows:** Navigate to **Stack Management → Workflows** (or **Observability → Alerts → Manage Workflows** depending on your version). Create a workflow triggered by the CPU alert from Step 1 that: **(1)** captures the alert context, **(2)** runs an ES|QL query to surface the top processes at that moment, and **(3)** opens an Observability case with findings attached. Workflows use a visual trigger → condition → action builder — walk the panel through the automation you built and explain how it would reduce analyst toil in a production environment.
+### Suggested investigation story (5 minutes)
+
+1. Find a service with elevated latency or errors  
+2. Open a trace → identify the slow dependency  
+3. Jump to related logs  
+4. Discuss whether you’d alert, create an SLO, or open a case  
+5. Tie it back to what you’d tell a customer’s platform owner tomorrow morning  
+
+---
+
+## Step 5 — Optional stretch
+
+Pick **one** if time remains:
+
+- **SLO:** Create an SLO on `frontend` (or checkout) latency/availability and explain burn-rate alerting  
+- **Alert:** Error-rate or latency threshold on a hot service, with a clear notification path  
+- **ES\|QL:** One panel that answers a business question from OTel logs/metrics (not vanity charts)  
+- **Workflows:** Alert → enrich with a query → open a case (where available)
 
 ---
 
 ## Final Question
 
-> How are the vitals of your local host while ingesting data? Were any alerts triggered? If you explored the OTel metrics section — what differences did you observe between host-level infrastructure metrics and application service metrics?
+> Walk us through your Observability Complete project. For two left-nav areas of your choice, what customer value did you demonstrate with the OTel Demo data — and what would you do next if this were a real Azure/AWS Kubernetes estate?
+
+---
+
+## Appendix A — Docker Compose alternative (no Kubernetes)
+
+If you cannot run local Kubernetes, you may use Docker Compose with the files under [`otel/`](otel/):
+
+1. Clone [opentelemetry-demo](https://github.com/open-telemetry/opentelemetry-demo) and check out a stable tag  
+2. Copy `otel/collector-config.yml` and `otel/docker-compose.override.yml` into the demo root  
+3. Fill in endpoint + API key placeholders  
+4. `docker compose up --detach`  
+
+Kubernetes + Helm remains the **preferred** path for this exercise.
+
+---
+
+## Appendix B — Legacy Logstash lab (not required)
+
+The previous Apache + Logstash lab files remain under [`logstash/`](logstash/) and [`sample-data/`](sample-data/) for reference only. **Do not use them for the panel exercise** unless a facilitator explicitly asks. Prefer OTLP.
 
 ---
 
